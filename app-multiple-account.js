@@ -1,10 +1,11 @@
-const { Client, MessageMedia } = require('whatsapp-web.js');
+const { Client, MessageMedia, LocalAuth } = require('whatsapp-web.js');
 const express = require('express');
 const socketIO = require('socket.io');
 const qrcode = require('qrcode');
 const http = require('http');
 const fs = require('fs');
 const { phoneNumberFormatter } = require('./helpers/formatter');
+const fileUpload = require('express-fileupload');
 const axios = require('axios');
 const port = process.env.PORT || 8000;
 
@@ -17,8 +18,20 @@ app.use(express.urlencoded({
   extended: true
 }));
 
+/**
+ * BASED ON MANY QUESTIONS
+ * Actually ready mentioned on the tutorials
+ * 
+ * The two middlewares above only handle for data json & urlencode (x-www-form-urlencoded)
+ * So, we need to add extra middleware to handle form-data
+ * Here we can use express-fileupload
+ */
+app.use(fileUpload({
+  debug: false
+}));
+
 app.get('/', (req, res) => {
-  res.sendFile('index-multiple-device.html', {
+  res.sendFile('index-multiple-account.html', {
     root: __dirname
   });
 });
@@ -53,12 +66,6 @@ const getSessionsFile = function() {
 
 const createSession = function(id, description) {
   console.log('Creating session: ' + id);
-  const SESSION_FILE_PATH = `./whatsapp-session-${id}.json`;
-  let sessionCfg;
-  if (fs.existsSync(SESSION_FILE_PATH)) {
-    sessionCfg = require(SESSION_FILE_PATH);
-  }
-
   const client = new Client({
     restartOnAuthFail: true,
     puppeteer: {
@@ -74,7 +81,9 @@ const createSession = function(id, description) {
         '--disable-gpu'
       ],
     },
-    session: sessionCfg
+    authStrategy: new LocalAuth({
+      clientId: id
+    })
   });
 
   client.initialize();
@@ -97,27 +106,17 @@ const createSession = function(id, description) {
     setSessionsFile(savedSessions);
   });
 
-  client.on('authenticated', (session) => {
+  client.on('authenticated', () => {
     io.emit('authenticated', { id: id });
     io.emit('message', { id: id, text: 'Whatsapp is authenticated!' });
-    sessionCfg = session;
-    fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function(err) {
-      if (err) {
-        console.error(err);
-      }
-    });
   });
 
-  client.on('auth_failure', function(session) {
+  client.on('auth_failure', function() {
     io.emit('message', { id: id, text: 'Auth failure, restarting...' });
   });
 
   client.on('disconnected', (reason) => {
     io.emit('message', { id: id, text: 'Whatsapp is disconnected!' });
-    fs.unlinkSync(SESSION_FILE_PATH, function(err) {
-        if(err) return console.log(err);
-        console.log('Session file deleted!');
-    });
     client.destroy();
     client.initialize();
 
@@ -156,6 +155,17 @@ const init = function(socket) {
 
   if (savedSessions.length > 0) {
     if (socket) {
+      /**
+       * At the first time of running (e.g. restarting the server), our client is not ready yet!
+       * It will need several time to authenticating.
+       * 
+       * So to make people not confused for the 'ready' status
+       * We need to make it as FALSE for this condition
+       */
+      savedSessions.forEach((e, i, arr) => {
+        arr[i].ready = false;
+      });
+
       socket.emit('init', savedSessions);
     } else {
       savedSessions.forEach(sess => {
@@ -177,56 +187,39 @@ io.on('connection', function(socket) {
   });
 });
 
-// io.on('connection', function(socket) {
-//   socket.emit('message', 'Connecting...');
-
-//   client.on('qr', (qr) => {
-//     console.log('QR RECEIVED', qr);
-//     qrcode.toDataURL(qr, (err, url) => {
-//       socket.emit('qr', url);
-//       socket.emit('message', 'QR Code received, scan please!');
-//     });
-//   });
-
-//   client.on('ready', () => {
-//     socket.emit('ready', 'Whatsapp is ready!');
-//     socket.emit('message', 'Whatsapp is ready!');
-//   });
-
-//   client.on('authenticated', (session) => {
-//     socket.emit('authenticated', 'Whatsapp is authenticated!');
-//     socket.emit('message', 'Whatsapp is authenticated!');
-//     console.log('AUTHENTICATED', session);
-//     sessionCfg = session;
-//     fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function(err) {
-//       if (err) {
-//         console.error(err);
-//       }
-//     });
-//   });
-
-//   client.on('auth_failure', function(session) {
-//     socket.emit('message', 'Auth failure, restarting...');
-//   });
-
-//   client.on('disconnected', (reason) => {
-//     socket.emit('message', 'Whatsapp is disconnected!');
-//     fs.unlinkSync(SESSION_FILE_PATH, function(err) {
-//         if(err) return console.log(err);
-//         console.log('Session file deleted!');
-//     });
-//     client.destroy();
-//     client.initialize();
-//   });
-// });
-
 // Send message
-app.post('/send-message', (req, res) => {
+app.post('/send-message', async (req, res) => {
+  console.log(req);
+
   const sender = req.body.sender;
   const number = phoneNumberFormatter(req.body.number);
   const message = req.body.message;
 
-  const client = sessions.find(sess => sess.id == sender).client;
+  const client = sessions.find(sess => sess.id == sender)?.client;
+
+  // Make sure the sender is exists & ready
+  if (!client) {
+    return res.status(422).json({
+      status: false,
+      message: `The sender: ${sender} is not found!`
+    })
+  }
+
+  /**
+   * Check if the number is already registered
+   * Copied from app.js
+   * 
+   * Please check app.js for more validations example
+   * You can add the same here!
+   */
+  const isRegisteredNumber = await client.isRegisteredUser(number);
+
+  if (!isRegisteredNumber) {
+    return res.status(422).json({
+      status: false,
+      message: 'The number is not registered'
+    });
+  }
 
   client.sendMessage(number, message).then(response => {
     res.status(200).json({

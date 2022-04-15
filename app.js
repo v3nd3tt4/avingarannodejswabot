@@ -1,4 +1,4 @@
-const { Client, MessageMedia } = require('whatsapp-web.js');
+const { Client, MessageMedia, LocalAuth } = require('whatsapp-web.js');
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const socketIO = require('socket.io');
@@ -14,9 +14,9 @@ const mime = require('mime-types');
 var mysql = require('mysql');
 
 var db = mysql.createConnection({
-    host: "localhost",
+    host: "127.0.0.1",
     user: "root",
-    password: "",
+    password: "goldroger27",
 	database: "db_avira"
 });
 
@@ -39,12 +39,6 @@ app.use(fileUpload({
   debug: true
 }));
 
-const SESSION_FILE_PATH = './whatsapp-session.json';
-let sessionCfg;
-if (fs.existsSync(SESSION_FILE_PATH)) {
-  sessionCfg = require(SESSION_FILE_PATH);
-}
-
 app.get('/', (req, res) => {
   res.sendFile('index.html', {
     root: __dirname
@@ -66,16 +60,19 @@ const client = new Client({
       '--disable-gpu'
     ],
   },
-  session: sessionCfg
+  authStrategy: new LocalAuth()
 });
 
-client.on('message', async(msg) => {
+client.on('message', msg => {
   var text = msg.body.toLowerCase();
-  if(text == '!ping'){
+  if (msg.body == '!ping') {
     msg.reply('pong');
-  }else if (text == '!groups') {
+  } else if (msg.body == 'good morning') {
+    msg.reply('selamat pagi');
+  } else if (msg.body == '!groups') {
     client.getChats().then(chats => {
       const groups = chats.filter(chat => chat.isGroup);
+
       if (groups.length == 0) {
         msg.reply('You have no group yet.');
       } else {
@@ -92,9 +89,9 @@ client.on('message', async(msg) => {
 		client.sendMessage(msg.from, pesan);
   }else if(text === 'menu'){
 		// const chat = await msg.getChat();
-		const user = await msg.getContact();
+		// const user = await msg.getContact();
 		console.log(msg.getQuotedMessage());
-		var pesan = 'Selamat datang @'+user.pushname+' Silahkan pilih menu di bawah ini:\n\n';
+		var pesan = 'Selamat datang, Silahkan pilih menu di bawah ini:\n\n';
     // var pesan = 'Selamat datang\n\n';
 		db.connect(function(err) {    
 			let sql = "SELECT nama_menu_utama, keterangan_menu_utama  FROM tb_menu_utama";
@@ -113,7 +110,7 @@ client.on('message', async(msg) => {
 			
 		});		
 	}else{
-		var pesan = 'Silahkan pilih menu di bawah ini:\n\n';
+    var pesan = 'Silahkan pilih menu di bawah ini:\n\n';
 		let sql = "SELECT * FROM v_bantuan where keterangan_menu_utama ='"+text+"'";
 		db.connect(function(err){
 			db.query(sql, function(err, rows){
@@ -173,8 +170,8 @@ client.on('message', async(msg) => {
 					});					
 				}	
 			});
-		});		
-	}
+		});
+  }
 
   // Downloading media
   if (msg.hasMedia) {
@@ -233,16 +230,10 @@ io.on('connection', function(socket) {
     socket.emit('message', 'Whatsapp is ready!');
   });
 
-  client.on('authenticated', (session) => {
+  client.on('authenticated', () => {
     socket.emit('authenticated', 'Whatsapp is authenticated!');
     socket.emit('message', 'Whatsapp is authenticated!');
-    console.log('AUTHENTICATED', session);
-    sessionCfg = session;
-    fs.writeFile(SESSION_FILE_PATH, JSON.stringify(session), function(err) {
-      if (err) {
-        console.error(err);
-      }
-    });
+    console.log('AUTHENTICATED');
   });
 
   client.on('auth_failure', function(session) {
@@ -251,10 +242,6 @@ io.on('connection', function(socket) {
 
   client.on('disconnected', (reason) => {
     socket.emit('message', 'Whatsapp is disconnected!');
-    fs.unlinkSync(SESSION_FILE_PATH, function(err) {
-        if(err) return console.log(err);
-        console.log('Session file deleted!');
-    });
     client.destroy();
     client.initialize();
   });
