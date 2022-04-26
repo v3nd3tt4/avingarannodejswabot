@@ -1,0 +1,20 @@
+2022/04/26-10:26:58.326 31b0 Reusing MANIFEST F:\okta\pedrolopez\.wwebjs_auth\session-client-one\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2022/04/26-10:26:58.327 31b0 Recovering log #190
+2022/04/26-10:26:58.360 31b0 Reusing old log F:\okta\pedrolopez\.wwebjs_auth\session-client-one\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000190.log 
+2022/04/26-11:41:02.159 654 Level-0 table #199: started
+2022/04/26-11:41:02.225 654 Level-0 table #199: 1301465 bytes OK
+2022/04/26-11:41:02.258 654 Delete type=0 #190
+2022/04/26-11:41:02.694 3298 Compacting 1@1 + 5@2 files
+2022/04/26-11:41:02.806 3298 Generated table #200@1: 34818 keys, 2248238 bytes
+2022/04/26-11:41:02.897 3298 Generated table #201@1: 42487 keys, 2267885 bytes
+2022/04/26-11:41:02.977 3298 Generated table #202@1: 46111 keys, 2206543 bytes
+2022/04/26-11:41:03.080 3298 Generated table #203@1: 28748 keys, 2178504 bytes
+2022/04/26-11:41:03.197 3298 Generated table #204@1: 86136 keys, 1701304 bytes
+2022/04/26-11:41:03.197 3298 Compacted 1@1 + 5@2 files => 10602474 bytes
+2022/04/26-11:41:03.212 3298 compacted to: files[ 0 0 5 0 0 0 0 ]
+2022/04/26-11:41:03.212 3298 Delete type=2 #192
+2022/04/26-11:41:03.212 3298 Delete type=2 #193
+2022/04/26-11:41:03.212 3298 Delete type=2 #194
+2022/04/26-11:41:03.212 3298 Delete type=2 #195
+2022/04/26-11:41:03.212 3298 Delete type=2 #196
+2022/04/26-11:41:03.213 3298 Delete type=2 #199
