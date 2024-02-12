@@ -2,7 +2,7 @@
 - author: Okta Pilopa
 - node version: v20.11.0
 - npm version: 10.2.4
-- library: whatsapp-web.js
+- library: [whatsapp-web.js](https://github.com/pedroslopez/whatsapp-web.js)
 
 ## langkah-langkah
 - clone repository
