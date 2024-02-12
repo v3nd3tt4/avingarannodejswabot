@@ -1,3 +1,2 @@
-2022/04/26-09:10:14.707 37cc Reusing MANIFEST F:\okta\pedrolopez\.wwebjs_auth\session-client-one\Default\Local Storage\leveldb/MANIFEST-000001
-2022/04/26-09:10:14.707 37cc Recovering log #13
-2022/04/26-09:10:14.708 37cc Reusing old log F:\okta\pedrolopez\.wwebjs_auth\session-client-one\Default\Local Storage\leveldb/000013.log 
+2024/02/12-15:10:44.168 2b00 Creating DB D:\xampp56\htdocs\avingarannodejswabot\.wwebjs_auth\session-client-one\Default\Local Storage\leveldb since it was missing.
+2024/02/12-15:10:44.265 2b00 Reusing MANIFEST D:\xampp56\htdocs\avingarannodejswabot\.wwebjs_auth\session-client-one\Default\Local Storage\leveldb/MANIFEST-000001
