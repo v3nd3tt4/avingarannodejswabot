@@ -35,7 +35,7 @@ var mysql = require('mysql');
 var db = mysql.createConnection({
     host: "localhost",
     user: "root",
-    password: "goldroger27",
+    password: "",
 	database: "db_avira"
 });
 
